@@ -95,6 +95,6 @@ def faireGraph(fichierCsv):
         faireGraph(fichierCsv)
 
 
-fichier_csv = '/Users/tom_planche/Desktop/Lycée/COURS/PREMIERE/NSI/PythonNsi/matplotlibMoi/iris_2D.csv'
+fichier_csv = '/path_to/iris_2D.csv'
 
 faireGraph(fichier_csv)

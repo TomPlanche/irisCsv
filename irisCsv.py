@@ -86,7 +86,7 @@ def graph(csv_file):
         plt.legend(handles = [red_legend, blue_legend, green_legend])
         plt.xlabel(x_label)
         plt.ylabel(y_label)
-        plt.title("Iris base model")
+        plt.title("Iris Data")
 
         plt.show()
 
@@ -97,6 +97,6 @@ def graph(csv_file):
         graph(csv_file)
 
 
-fichier_csv = 'path_to_iris_2D.csv'
+fichier_csv = 'src/iris_2D.csv'
 
 graph(fichier_csv)

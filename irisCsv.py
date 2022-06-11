@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from termcolor import colored
 
 
-def graph(csv_file):
+def graph_v1(csv_file):
     with open(csv_file) as file:
         all_lines = [line.rstrip().rsplit(',') for line in file.readlines() if line != ""]
         file.close()
@@ -94,9 +94,9 @@ def graph(csv_file):
 
     if add_value_choice not in ['n', 'nn', 'non', 'yes', 'y']:
         print("\nYes or No ?")
-        graph(csv_file)
+        graph_v1(csv_file)
 
 
 fichier_csv = 'src/iris_2D.csv'
 
-graph(fichier_csv)
+graph_v1(fichier_csv)

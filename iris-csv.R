@@ -22,20 +22,27 @@
 
 # install.packages("plotrix") # If plotrix package is not installed, install it.
 library("plotrix") # Import plotrix package.
-setwd(getwd()) # set working directory to the current directory.
+library("glue") # Import glue package.
+library("dplyr") # Import dplyr package.
+
+setwd("~/Desktop/Prog/depotsGit/irisCsv") # set working directory to the current directory.
 
 # FUNCTIONS ====================================================================
 
 # Function to read the CSV file and return the data.
 fetch_data <- function() {
-  return <- read.csv("iris_2D.csv", TRUE, ",", dec = ".") # read csv file
+  return <- read.csv("src/iris_2D.csv", TRUE, ",", dec = ".") # read csv file
 }
 
-# Function to dertermine the species of the found/mystery iris.
-# @param: length: the length of the iris petal.
-# @param: width: the width of the iris petal.
-# @param: nb_neighbors: the number of neighbors to determine the species.
-# @return: array containing the species name and the distance of the nb_neighbors'th neighbor to the found iris.
+#' Dertermine the species of the found/mystery iris.
+#'
+#' @param length the length of the iris petal.
+#' @param width the width of the iris petal.
+#' @param nb_neighbors the number of neighbors to determine the species.
+#' @return Array containing the species name and the distance of the nb_neighbors'th neighbor to the found iris.
+#' @examples
+#' iris_species_distance(5.1, 3.5, 3)
+#' iris_species_distance(5.1, 3.5, 5)
 determine_species <- function(length, width, nb_neighbors) {
   data <- fetch_data() # get the data from the CSV file.
 
@@ -46,19 +53,23 @@ determine_species <- function(length, width, nb_neighbors) {
   }
 
   # Calculate the distance of all the flowers to the found iris.
-  distance_spices <- sqrt((data$petalLength - length)^2 + (data$petalWidth - width)^2)
-
-  # sort the species column as per the distance_spices
-  data <- data[order(distance_spices),]
+  data <- data %>%
+    mutate(
+      distance = sqrt(
+        (data$petalLength - length)^2 + (data$petalWidth - width)^2
+      )
+    ) %>%
+    arrange(distance)
 
   # count the species of the first nb_neighbors rows
   species_count <- table(data$species[1:nb_neighbors])
 
+  circle_radius_ <- data$distance[nb_neighbors] # get the radius of the circle to plot.
   # return the species name with the highest count and the distance of the nb_neighbors'th neighbor to the found iris.
   return(
     c(
       species_name = names(species_count)[which.max(species_count)],
-      circle_radius = sort(distance_spices)[nb_neighbors + 3]
+      circle_radius = as.numeric(circle_radius_)
     )
   )
 }
@@ -102,6 +113,11 @@ main <- function() {
       nb_neighbors <- readline(glue("How many neighbors do you want to use? (1-{nrow(data) - 1}) : "))
     }
 
+    print("Calling determine_species() with the following parameters:")
+    print(glue("length: {mystery_iris_split[1]}", ))
+    print(glue("width: {mystery_iris_split[2]}", ))
+    print(glue("nb_neighbors: {nb_neighbors}", ))
+
     # determine the species of the mystery iris.
     mystery_species <- determine_species(mystery_iris_split[1], mystery_iris_split[2], nb_neighbors)["species_name"]
     # determine the circle radius of the mystery iris.
@@ -114,7 +130,7 @@ main <- function() {
     )
   }
 
-    # plot the data
+  # plot the data
   plot(
     data$petalLength,
     data$petalWidth,
@@ -134,6 +150,9 @@ main <- function() {
     pch = 16,
   )
 
+
+
+
   # plot the mystery iris circle
   draw.circle(as.numeric(mystery_iris_split[1]), as.numeric(mystery_iris_split[2]), as.numeric(circle_radius), nv=1000, border=NULL, col=NA, lty=1, lwd=1)
 
@@ -149,3 +168,17 @@ main <- function() {
 
 # FUNCTION CALLS =================================================================
 main() # plot the data
+
+# determine_species(4, 2, 5)
+
+#' Add together two numbers
+#'
+#' @param x A number.
+#' @param y A number.
+#' @return The sum of \code{x} and \code{y}.
+#' @examples
+#' add(1, 1)
+#' add(10, 1)
+add <- function(x, y) {
+  x + y
+}

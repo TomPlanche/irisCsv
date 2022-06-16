@@ -17,21 +17,26 @@
 ################################################################################
 
 
-
 # SETUP ========================================================================
-
 # install.packages("plotrix") # If plotrix package is not installed, install it.
-library("plotrix") # Import plotrix package.
-library("glue") # Import glue package.
-library("dplyr") # Import dplyr package.
+library(dplyr)
+library(ggplot2)
+library(glue)
+library(concaveman)
+
+if(!require('ggforce')) {
+  install.packages('ggforce')
+  library('ggforce')
+}
 
 setwd("~/Desktop/Prog/depotsGit/irisCsv") # set working directory to the current directory.
+# END SETUP ====================================================================
 
 # FUNCTIONS ====================================================================
 
 # Function to read the CSV file and return the data.
 fetch_data <- function() {
-  return <- read.csv("src/iris_2D.csv", TRUE, ",", dec = ".") # read csv file
+  return <- read.csv("src/iris_2D.csv", TRUE, ",")
 }
 
 #' Dertermine the species of the found/mystery iris.
@@ -43,23 +48,26 @@ fetch_data <- function() {
 #' @examples
 #' iris_species_distance(5.1, 3.5, 3)
 #' iris_species_distance(5.1, 3.5, 5)
-determine_species <- function(length, width, nb_neighbors) {
+determine_species <- function(length_, width_, nb_neighbors) {
   data <- fetch_data() # get the data from the CSV file.
 
   # if length and/or width are character or string, convert to numeric
-  if (is.character(length) || is.character(width)) {
-      length <- as.numeric(length)
-      width <- as.numeric(width)
+  if (is.character(length_) || is.character(width_)) {
+    length_ <- as.numeric(length_)
+    width_ <- as.numeric(width_)
   }
 
   # Calculate the distance of all the flowers to the found iris.
   data <- data %>%
     mutate(
       distance = sqrt(
-        (data$petalLength - length)^2 + (data$petalWidth - width)^2
-      )
+        (data$petalLength - length_)^2 + (data$petalWidth - width_)^2
+      ),
+      species = "mystery"
     ) %>%
     arrange(distance)
+
+  print(data)
 
   # count the species of the first nb_neighbors rows
   species_count <- table(data$species[1:nb_neighbors])
@@ -69,16 +77,17 @@ determine_species <- function(length, width, nb_neighbors) {
   return(
     c(
       species_name = names(species_count)[which.max(species_count)],
-      circle_radius = as.numeric(circle_radius_)
+      circle_radius = circle_radius_
     )
   )
 }
 
 # main function to plot the data and ask the user if he wants to add a new flower.
-main <- function() {
+main_func_tom <- function() {
   data <- fetch_data() # get the data from the CSV file.
-  legendNames <- c("Setosa", "Virginica", "Versicolor") # set the legend names.
-  legendCols <- c("Green", "Red", "Blue") # set the legend colors.
+  add_data <- FALSE
+
+  legendCols <- c("aquamarine4", "coral1", "cornflowerblue") # set the legend colors.
 
   # get user input
   add_mystery_iris  <- readline("Do you have an iris you want me to deduce the species from? (y/n) : ")
@@ -88,40 +97,33 @@ main <- function() {
     add_mystery_iris <- readline("Do you have an iris you want me to deduce the species from? (y/n) : ")
   }
 
-  mystery_iris_split <- 0 # initialize the mystery iris split.
-  circle_radius <- 0 # initialize the circle radius.
+  if (add_mystery_iris %in% c("y", "Y")) {
+    add_data <- TRUE
+  }
 
   # if the user wants to add a mystery iris, ask for the data.
-  if (add_mystery_iris %in% c("y", "Y")) {
+  if (add_data) {
     # ask for the length and width of the mystery iris.
     mystery_iris <- readline("Please enter the values (length,witdh) of the mystery iris (separated by a comma): ")
 
     # split mystery_iris into length and width and convert to numeric
-    mystery_iris_split <- strsplit(mystery_iris, ",")
-    mystery_iris_split <- c(as.numeric(unlist(mystery_iris_split)), "mystery")
+    mystery_iris_split_as_nb <- as.vector(as.numeric(unlist(strsplit(mystery_iris, ","))))
+    mystery_iris_split <- c(as.character(unlist(mystery_iris_split_as_nb)), "mystery")
 
     data <- rbind(data, mystery_iris_split)
 
-    append(legendNames, "Mystery") # add the mystery iris to the legend.
-    append(legendCols, "Black") # add the mystery iris to the legend.
+    legendCols <- c("black", legendCols) # add the mystery iris to the legend.
 
     # ask for the number of neighbors to determine the species of the mystery iris.
-    nb_neighbors <- as.numeric(readline(paste0("How many neighbors do you want to use? (1-", nrow(data) - 1, " : ")))
+    nb_neighbors <- as.numeric(readline(paste0("How many neighbors do you want to use? (1-", nrow(data) - 1, ") : ")))
 
     # if the user missespells the answer, ask again.
     while (!is.numeric(nb_neighbors) || nb_neighbors < 1 || nb_neighbors > nrow(data) - 1) {
       nb_neighbors <- readline(glue("How many neighbors do you want to use? (1-{nrow(data) - 1}) : "))
     }
 
-    print("Calling determine_species() with the following parameters:")
-    print(glue("length: {mystery_iris_split[1]}", ))
-    print(glue("width: {mystery_iris_split[2]}", ))
-    print(glue("nb_neighbors: {nb_neighbors}", ))
-
     # determine the species of the mystery iris.
-    mystery_species <- determine_species(mystery_iris_split[1], mystery_iris_split[2], nb_neighbors)["species_name"]
-    # determine the circle radius of the mystery iris.
-    circle_radius <- determine_species(mystery_iris_split[1], mystery_iris_split[2], nb_neighbors)["circle_radius"]
+    mystery_species <- determine_species(mystery_iris_split_as_nb[1], mystery_iris_split_as_nb[2], nb_neighbors)["species_name"]
 
     print(
       paste0(
@@ -130,55 +132,67 @@ main <- function() {
     )
   }
 
-  # plot the data
-  plot(
-    data$petalLength,
-    data$petalWidth,
-    xlab = "Petal Length",
-    ylab = "Petal Width",
-    main = "Iris Data",
-    col = ifelse(
-      data$species == "virginica",
-      "Red",
-      ifelse(data$species == "setosa",
-             "Green",
-             ifelse(data$species == "versicolor",
-                    "Blue",
-                    "Black")
+  data_to_plot <- data %>%
+    mutate(
+      petalLength = as.numeric(petalLength),
+      petalWidth = as.numeric(petalWidth)
+    )
+
+  to_plot <- data_to_plot %>%
+    ggplot(
+      aes(
+        x = petalLength,
+        y = petalWidth,
+        color = species
       )
-    ),
-    pch = 16,
+    ) +
+    geom_point() +
+    geom_mark_hull(
+      data = data_to_plot,
+      aes(
+        label = species,
+        filter = species != "mystery"
+      ),
+      concavity = 2
+    ) +
+    scale_x_continuous(
+      limits = as.numeric(c(
+        floor(min(data_to_plot$petalLength)),
+        ceiling(max(data_to_plot$petalLength))
+      )),
+      breaks = seq(
+        floor(min(data_to_plot$petalLength)) ,
+        ceiling(max(data_to_plot$petalLength)),
+        by = 1,
+      )
+    ) +
+    labs(
+      title = "Iris data",
+      x = "Petal length",
+      y = "Petal width",
+    ) +
+    scale_color_manual(
+      # labels = legendNames,
+      values = legendCols
+    ) +
+    theme(
+      axis.line = element_line(
+        colour = "black",
+        size = 1,
+        linetype = "solid"
+      )
+    ) + coord_fixed(
+    ratio = 2
   )
 
-
-
-
-  # plot the mystery iris circle
-  draw.circle(as.numeric(mystery_iris_split[1]), as.numeric(mystery_iris_split[2]), as.numeric(circle_radius), nv=1000, border=NULL, col=NA, lty=1, lwd=1)
-
-  # plot the legend
-  legend(
-    x = "topleft",
-    title = "Spices",
-    legend = legendNames,
-    pch = c(16, 16, 16),
-    col = legendCols
-  )
+  if (add_data) {
+    # TODO Add circle, centered on the mystery point with the radius
+    # TODO of the nb_neighbors'th distance to the mystery point.
+  }
+  to_plot
 }
 
 # FUNCTION CALLS =================================================================
-main() # plot the data
-
-# determine_species(4, 2, 5)
-
-#' Add together two numbers
-#'
-#' @param x A number.
-#' @param y A number.
-#' @return The sum of \code{x} and \code{y}.
-#' @examples
-#' add(1, 1)
-#' add(10, 1)
-add <- function(x, y) {
-  x + y
-}
+main_func_tom()
+# #
+# print(determine_species(4, .75, 5))

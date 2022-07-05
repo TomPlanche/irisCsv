@@ -224,7 +224,7 @@ main_func_tom <- function() {
     }
   }
 
-  to_plot
+to_plot # plot the data.
 }
 
 # FUNCTION CALLS =================================================================

@@ -13,7 +13,7 @@
 #'
 #' @author: Tom Planche (github.com/tomplanche - tomplanche@icloud.com)
 #' @date:   11th of June 2022
-#' @date-last-modified: 17th of June 2022
+#' @lastModified: 20 Nov 2022
 #'
 #'###############################################################################
 
@@ -53,10 +53,9 @@ fetch_data <- function() {
   #' Fetches the data from the CSV file.
   #'
   #' @description This function fetches the data from the CSV file and returns a dataframe.
-  #' @usage mypaste(x, y)
+  #' @usage data <- fetch_data()
   #' @return A dataframe of the data.
-  #' @details The inputs can be anything that can be input into
-  #' the paste function.
+  #' @details No arguments are needed.
   #'
   #' @examples
   #' data <- fetch_data()
@@ -64,7 +63,7 @@ fetch_data <- function() {
   return <- read.csv("src/iris_2D.csv", TRUE, ",")
 }
 
-main_func_tom <- function() {
+main <- function() {
   #' Main function to plot the data and ask the user if he wants to add a new flower.
   #'
   #' @description This is the main function to plot the data and ask the user if he wants to add a new flower.
@@ -73,11 +72,14 @@ main_func_tom <- function() {
   #' @details Can be improved... I'll do it later if I have time :)
   #'
   #' @examples
-  #' main_func_tom()
-  data <- fetch_data() # get the data from the CSV file.
+  #' main()
+
+  # get the data from the CSV file.
+  data <- fetch_data()
   add_data <- FALSE
 
-  legendCols <- c("aquamarine4", "coral1", "cornflowerblue") # set the legend colors.
+  # set the legend colors.
+  legendCols <- c("aquamarine4", "coral1", "cornflowerblue")
 
   # get user input
   add_mystery_iris  <- readline("Do you have an iris you want me to deduce the species from? (y/n) : ")
@@ -108,8 +110,8 @@ main_func_tom <- function() {
         petalLength = as.numeric(petalLength),
         petalWidth = as.numeric(petalWidth)
       )
-
-    legendCols <- c("black", legendCols) # add the mystery iris to the legend.
+    # add the mystery iris to the legend.
+    legendCols <- c("black", legendCols)
 
     # ask for the number of neighbors to determine the species of the mystery iris.
     nb_neighbors <- as.numeric(readline(paste0("How many neighbors do you want to use? (1-", nrow(data) - 1, ") : ")))
@@ -228,4 +230,4 @@ to_plot # plot the data.
 }
 
 # FUNCTION CALLS =================================================================
-main_func_tom()
+main()
